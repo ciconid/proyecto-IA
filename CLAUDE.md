@@ -19,7 +19,7 @@ writes everything involving a decision or analysis: EDA findings, preprocessing,
 
 **Commits:** the student commits. After any change to the repo (yours or theirs), end your reply with
 a suggested commit message in Spanish, imperative mood (e.g. `Agregar análisis exploratorio`).
-Show only the message, not the git commands. Don't run `git commit` unless they ask.
+Show only the message, prefixed with `commit-message: ` (e.g. ``commit-message: `Agregar análisis exploratorio` ``), not the git commands. Don't run `git commit` unless they ask.
 
 ## Commands
 

@@ -8,8 +8,8 @@ Entrega: 22/10/2026 23:59 (reentrega 05/11). Hoy es 15/10 → ~7 días.
 
 Decisiones tomadas:
 - **Modo guiado**: en cada fase Claude explica los conceptos y las decisiones a tomar, el alumno
-  escribe el código, y Claude lo revisa (no escribe las celdas del notebook por él). Claude puede dar
-  pistas, ejemplos mínimos de API y señalar errores.
+  escribe el código que implica decisiones o análisis, y Claude lo revisa. Claude escribe solo el
+  boilerplate (encabezados, imports, carga/guardado de datos, `shape`/`head`/`info`).
 - **Entorno**: local en el repo (Python 3.12 + venv). El notebook vive en `notebooks/proyecto.ipynb`;
   Claude lo lee directamente para revisarlo. Se commitea al terminar cada fase (historial = evolución
   del trabajo). Colab queda como alternativa para abrirlo/compartirlo (el `.ipynb` es compatible).
