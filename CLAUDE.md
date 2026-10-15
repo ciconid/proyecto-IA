@@ -13,7 +13,9 @@ The deliverable is a single Jupyter notebook, `notebooks/proyecto.ipynb` (must s
 Development plan and phases: `PLAN.md`. Experiment log: `docs/experimentos.md`.
 
 **Working mode:** the student writes the notebook code to learn it (they must defend it orally).
-Explain concepts, give hints and review their code — don't write notebook cells for them.
+Explain concepts, give hints and review their code. Claude writes only the boilerplate: section
+headers, imports, data loading/saving and trivial inspection (`shape`, `head`, `info`). The student
+writes everything involving a decision or analysis: EDA findings, preprocessing, models, experiments.
 
 **Commits:** the student commits. After any change to the repo (yours or theirs), end your reply with
 a suggested commit message in Spanish, imperative mood (e.g. `Agregar análisis exploratorio`).
