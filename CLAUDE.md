@@ -9,7 +9,23 @@ University assignment (UNS, Inteligencia Artificial 2026): ternary classificatio
 network** — with Pandas, Scikit-learn and Keras. Full spec: `docs/2026 - IA - Proyecto Aprendizaje Automático.docx.pdf`
 (in Spanish; work and notebook text are in Spanish).
 
-No code exists yet; the deliverable is a Jupyter notebook (runnable in Google Colab).
+The deliverable is a single Jupyter notebook, `notebooks/proyecto.ipynb` (must stay Colab-compatible).
+Development plan and phases: `PLAN.md`. Experiment log: `docs/experimentos.md`.
+
+**Working mode:** the student writes the notebook code to learn it (they must defend it orally).
+Explain concepts, give hints and review their code — don't write notebook cells for them.
+
+**Commits:** the student commits. After any change to the repo (yours or theirs), end your reply with
+a suggested commit message in Spanish, imperative mood (e.g. `Agregar análisis exploratorio`).
+Show only the message, not the git commands. Don't run `git commit` unless they ask.
+
+## Commands
+
+```bash
+source .venv/bin/activate                     # venv (Python 3.12) with requirements.txt installed
+jupyter notebook notebooks/                   # or open in VS Code with the .venv kernel
+jupyter nbconvert --to notebook --execute notebooks/proyecto.ipynb --output /tmp/run.ipynb  # run end to end
+```
 
 ## Deliverables (zip uploaded to Moodle; deadline 22/10/2026 23:59, resubmission 05/11/2026)
 - One `.ipynb` containing data preprocessing, both models and their evaluation. Should be well
