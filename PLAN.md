@@ -145,7 +145,7 @@ Objetivo: elegir las versiones finales y generar el CSV de entrega.
 - **Volver a las etiquetas de texto** (`Mala`/`Buena`/`Muy buena`).
   *Por qué:* el CSV de entrega tiene que ser legible y coincidir con las clases originales.
 - **Generar `output/predicciones_test.csv`** = test original + `pred_arbol` + `pred_rna`
-  (verificar 499 filas, mismo orden).
+  (verificar 500 filas, mismo orden).
   *Por qué:* es un entregable obligatorio con ese formato exacto.
 
 ### Fase 6 — Presentación y entrega (día 6–7)
@@ -167,6 +167,6 @@ Objetivo: comunicar el trabajo en 10 minutos y entregar el zip completo.
 - El notebook corre de punta a punta (`jupyter nbconvert --execute`) sin errores y con semillas fijas.
 - Ninguna transformación se ajusta sobre datos de validación/test (revisar que los `fit` estén
   solo sobre train).
-- El CSV final tiene las 499 filas del test, sus columnas originales y las dos de predicción.
+- El CSV final tiene las 500 filas del test, sus columnas originales y las dos de predicción.
 - `docs/experimentos.md` tiene cada experimento con parámetros, resultado y conclusión.
 - El alumno puede explicar con sus palabras cada decisión de la bitácora (lo chequeamos en el ensayo).
