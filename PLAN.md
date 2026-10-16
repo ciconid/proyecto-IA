@@ -28,84 +28,139 @@ qué**, para tenerlo listo en la presentación.
 ## Fases
 
 ### Fase 0 — Setup (día 1)
-- Entorno (lo prepara Claude, es mecánico y no es contenido de la materia):
-  - `requirements.txt` con `pandas`, `numpy`, `scikit-learn`, `tensorflow`, `matplotlib`, `seaborn`,
-    `jupyter`, `ipykernel`.
-  - `python3 -m venv .venv && .venv/bin/pip install -r requirements.txt`.
-  - `.gitignore` con `.venv/`, `.ipynb_checkpoints/`, `__pycache__/`.
-  - Agregar a `CLAUDE.md` los comandos: activar venv (`source .venv/bin/activate`), abrir el
-    notebook (VS Code eligiendo el kernel de `.venv`; alternativa `jupyter notebook notebooks/`), y ejecutar el
-    notebook completo sin abrirlo (`jupyter nbconvert --to notebook --execute notebooks/proyecto.ipynb`).
-- Editor: **VS Code** con la extensión Jupyter (`ms-toolsai.jupyter`) y el kernel de `.venv`.
-- Lo hace el alumno: crear `notebooks/proyecto.ipynb` (VS Code + kernel `.venv`) y cargar los CSV
-  con rutas relativas (`../data/movies_train.csv`). Los imports y setups se agregan a medida que
-  cada fase los necesita.
-- Estructura de secciones: 1 Introducción · 2 Análisis exploratorio · 3 Preprocesamiento ·
-  4 Árbol de decisión · 5 RNA · 6 Comparación · 7 Predicciones sobre test · 8 Uso de herramientas de IA.
+Objetivo: tener un entorno reproducible y el notebook listo para trabajar.
+
+- **Entorno** (Claude): `.venv` con `requirements.txt`, `.gitignore`, comandos en `CLAUDE.md`. ✅
+  *Por qué:* todos corren las mismas versiones de librerías y el repo no guarda archivos generados.
+- **Editor**: VS Code + extensión Jupyter + kernel `.venv`. ✅
+  *Por qué:* el notebook vive en el repo y Claude lo puede revisar directo.
+- **Estructura del notebook** (Claude): secciones 1–8 como celdas markdown + carga de los CSV. ✅
+  *Por qué:* el enunciado pide un notebook bien organizado; las secciones guían el trabajo.
+- **Introducción y primera mirada** (alumno): párrafo de introducción y respuestas sobre
+  `shape`/`info`.
+  *Por qué:* es el primer minuto de la oral y el punto de partida del EDA.
+- Los imports y setups se agregan a medida que cada fase los necesita.
 
 ### Fase 1 — Análisis exploratorio (EDA) (día 1–2)
-Conceptos: tipos de variables, valores faltantes, distribución de clases, outliers, correlación.
-Tareas: `shape`, `info`, `describe`, `isna().sum()`; distribución de `class` (¿está balanceada?);
-histogramas de numéricas (budget/revenue/popularity están muy sesgadas); `0` en budget/revenue
-como “desconocido”; cardinalidad de categóricas (`genre` baja; productora, director y actores muy alta);
-relación de cada variable con la clase (boxplots por clase).
-Salida: lista de problemas detectados → define el preprocesamiento.
+Objetivo: conocer los datos antes de modelar. Cada problema que se encuentre acá es una decisión
+de preprocesamiento en la Fase 2.
+
+- **Tipos de variables** (`info`): clasificar columnas en numéricas, categóricas y texto/IDs.
+  *Por qué:* cada tipo se procesa distinto (escalar, codificar o descartar).
+- **Valores faltantes** (`isna().sum()`): cuántos hay y en qué columnas.
+  *Por qué:* los modelos no aceptan vacíos; hay que decidir si imputar o descartar.
+- **Ceros que significan "desconocido"** en `budget` y `revenue`.
+  *Por qué:* son faltantes disfrazados; tratados como 0 real engañan al modelo.
+- **Distribución de la clase** (`value_counts` de `class`): ¿hay clases mucho más frecuentes?
+  *Por qué:* si está desbalanceada, la accuracy engaña y conviene F1 macro o `class_weight`.
+- **Distribución de las numéricas** (`describe`, histogramas): rangos, sesgos y valores extremos.
+  *Por qué:* define si hace falta transformación logarítmica y escalado (clave para la RNA).
+- **Cardinalidad de las categóricas** (`nunique`): cuántos valores distintos tiene cada una.
+  *Por qué:* pocas (ej. `genre`) → one-hot; miles (directores, actores) → no se pueden codificar
+  directamente.
+- **Relación con la clase** (boxplots o promedios por clase): qué variables cambian según la clase.
+  *Por qué:* da intuición de qué atributos van a ser útiles y sirve para las diapositivas.
+
+Salida: celda markdown con la lista de hallazgos, que se anotan también en `docs/experimentos.md`.
 
 ### Fase 2 — Preprocesamiento (día 2–3) — *se evalúa directamente*
-Conceptos clave: fuga de datos (*data leakage*), split train/validación estratificado,
-`Pipeline` y `ColumnTransformer`, codificación one-hot vs ordinal, escalado.
-Decisiones a tomar (y justificar en la bitácora):
-- Separar `X`/`y`; split estratificado (p. ej. 80/20, `random_state` fijo) **antes** de ajustar
-  cualquier transformación.
-- Descartar columnas identificadoras (`movieId`, título crudo).
-- Ingeniería de atributos: año extraído del título; `budget`/`revenue` = 0 → faltante + indicador
-  “dato conocido”; transformación logarítmica; posibles ratios (revenue/budget).
-- Faltantes: imputación (mediana para numéricas, “desconocido” para categóricas).
-- Alta cardinalidad (nombres de personas/productoras): descartar, quedarse con el top-N y agrupar el
-  resto en “Otro”, o usar las variables numéricas de popularidad que ya los resumen.
-- `belong_to_collection` → booleano; `genre` → one-hot.
-- Etiqueta: mapear clases a 0/1/2 (necesario para Keras).
-- El árbol no necesita escalado; la RNA sí (StandardScaler) — explicar por qué en la oral.
-- `movies_test_actualizado.csv` trae columna `class`: no usarla para entrenar ni para elegir
-  hiperparámetros. Consultar a la cátedra si puede usarse como evaluación final.
+Objetivo: transformar los datos crudos en una matriz numérica sin faltantes que los modelos
+puedan usar, sin filtrar información de validación/test. Cada decisión se justifica en la bitácora.
+
+- **Separar `X`/`y` y hacer split estratificado** (`train_test_split`, 80/20, `stratify`,
+  `random_state` fijo) **antes** de cualquier transformación.
+  *Por qué:* si imputación o escalado se ajustan con datos de validación, hay fuga de datos y las
+  métricas salen infladas. Estratificar mantiene la proporción de clases en ambos conjuntos.
+- **Descartar identificadores** (`movieId`, título crudo).
+  *Por qué:* son únicos por película; el modelo solo podría memorizarlos, no generalizar.
+- **Ingeniería de atributos**: año desde el título; `budget`/`revenue` = 0 → faltante + indicador
+  "dato conocido"; logaritmo en montos; posibles ratios (revenue/budget).
+  *Por qué:* extrae información útil escondida en el texto y corrige los faltantes disfrazados y
+  los sesgos detectados en el EDA.
+- **Imputar faltantes** (`SimpleImputer`: mediana en numéricas, "desconocido" en categóricas).
+  *Por qué:* los modelos no aceptan vacíos; la mediana es robusta a valores extremos.
+- **Alta cardinalidad** (productoras, directores, actores): descartar, top-N + "Otro", o apoyarse en
+  las columnas numéricas de popularidad.
+  *Por qué:* un one-hot con miles de valores genera miles de columnas casi vacías.
+- **Codificar categóricas**: `belong_to_collection` → booleano; `genre` → one-hot.
+  *Por qué:* los modelos operan con números; one-hot evita inventar un orden entre géneros.
+- **Codificar la etiqueta** a 0/1/2.
+  *Por qué:* Keras necesita la clase como entero para `sparse_categorical_crossentropy`.
+- **Escalar solo para la RNA** (`StandardScaler`).
+  *Por qué:* el árbol compara umbrales y la escala no le afecta; la RNA usa descenso por gradiente
+  y escalas muy distintas dificultan el entrenamiento. Pregunta probable en la oral.
+- **Armarlo con `Pipeline` + `ColumnTransformer`**.
+  *Por qué:* garantiza que train, validación y test pasen por exactamente las mismas transformaciones.
+- **No usar la `class` del test** para entrenar ni elegir hiperparámetros. Consultar a la cátedra
+  si puede usarse como evaluación final.
+  *Por qué:* el test simula datos nunca vistos; usarlo para decidir invalida la evaluación.
 
 ### Fase 3 — Árbol de decisión (día 3–4)
-Conceptos: entropía/Gini, sobreajuste, profundidad, poda, validación cruzada.
-- Línea base: clasificador de clase mayoritaria (`DummyClassifier`) para tener referencia.
-- Árbol por defecto → observar sobreajuste (accuracy train vs validación).
-- Experimentar en orden y registrar cada paso: `max_depth`, `min_samples_leaf`, `criterion`,
-  `class_weight`; luego `GridSearchCV` con CV estratificada.
-- Usar `random_state` fijo en el árbol y en la búsqueda de hiperparámetros.
-- Métricas: accuracy, F1 macro, matriz de confusión, `classification_report`.
-- Interpretación: graficar el árbol (primeros niveles) e importancia de atributos — muy útil para
-  las diapositivas.
+Objetivo: entrenar y ajustar un árbol, registrando la evolución de los experimentos.
+
+- **Línea base** (`DummyClassifier`, clase mayoritaria).
+  *Por qué:* da el piso mínimo; un modelo que no lo supera no aprendió nada.
+- **Árbol por defecto** y comparar accuracy en train vs validación.
+  *Por qué:* un árbol sin límites memoriza el train; ver el sobreajuste justifica ajustar parámetros.
+- **Experimentar de a un hiperparámetro**: `max_depth`, `min_samples_leaf`, `criterion`,
+  `class_weight`, anotando cada prueba en la bitácora.
+  *Por qué:* el enunciado pide mostrar con qué se empezó, qué se varió y en qué orden.
+- **Búsqueda sistemática** (`GridSearchCV` con CV estratificada).
+  *Por qué:* la validación cruzada da una estimación más estable que un solo split.
+- **`random_state` fijo** en el árbol y en la búsqueda.
+  *Por qué:* resultados reproducibles y comparables entre experimentos.
+- **Métricas**: accuracy, F1 macro, matriz de confusión, `classification_report`.
+  *Por qué:* la matriz muestra qué clases se confunden; F1 macro no se deja engañar por el desbalance.
+- **Interpretación**: graficar los primeros niveles del árbol e importancia de atributos.
+  *Por qué:* es la gran ventaja del árbol y material muy visual para las diapositivas.
 
 ### Fase 4 — Red neuronal con Keras (día 4–5)
-Conceptos: capas densas, ReLU, softmax, función de pérdida `sparse_categorical_crossentropy`,
-optimizador Adam, épocas/batch, early stopping, dropout, curvas de aprendizaje.
-- Imports de Keras y semilla global (`keras.utils.set_random_seed`) al comienzo de la sección.
-- Modelo inicial chico (p. ej. 1 capa oculta) → curvas loss/accuracy train vs validación.
-- Experimentar en orden y registrar: neuronas y capas, tasa de aprendizaje, dropout/regularización,
-  batch size, `class_weight`; usar `EarlyStopping` con el conjunto de validación.
-- Mismas métricas que el árbol para poder compararlos.
+Objetivo: entrenar y ajustar una RNA, registrando la evolución de los experimentos.
+
+- **Imports de Keras y semilla global** (`keras.utils.set_random_seed`) al inicio de la sección.
+  *Por qué:* los pesos iniciales son aleatorios; sin semilla cada corrida da resultados distintos.
+- **Modelo inicial chico** (1 capa oculta densa + ReLU, salida softmax de 3 neuronas, Adam,
+  `sparse_categorical_crossentropy`).
+  *Por qué:* empezar simple da una referencia; softmax produce una probabilidad por clase.
+- **Curvas de aprendizaje** (loss y accuracy, train vs validación, por época).
+  *Por qué:* muestran si el modelo aprende, si sobreajusta (validación empeora) o si le falta capacidad.
+- **Experimentar de a un cambio**: neuronas y capas, tasa de aprendizaje, dropout/regularización,
+  batch size, `class_weight`, anotando cada prueba.
+  *Por qué:* igual que con el árbol, la evolución de las pruebas es parte de la evaluación.
+- **`EarlyStopping`** sobre la pérdida de validación.
+  *Por qué:* corta el entrenamiento cuando deja de mejorar y evita sobreajustar sin adivinar las épocas.
+- **Mismas métricas que el árbol**.
+  *Por qué:* permite compararlos de forma justa en la Fase 5.
 
 ### Fase 5 — Comparación y predicción final (día 5–6)
-- Tabla comparativa árbol vs RNA (métricas de validación, matrices de confusión, ventajas:
-  interpretabilidad vs capacidad).
-- Reentrenar los modelos finales con todo el train, aplicar **el mismo pipeline** al test, predecir y
-  volver a las etiquetas de texto (`Mala`/`Buena`/`Muy buena`).
-- Generar `output/predicciones_test.csv` = test original + `pred_arbol` + `pred_rna`
+Objetivo: elegir las versiones finales y generar el CSV de entrega.
+
+- **Tabla comparativa árbol vs RNA** (métricas de validación, matrices de confusión).
+  *Por qué:* resume los resultados para la oral; incluir ventajas cualitativas (interpretabilidad
+  vs capacidad).
+- **Reentrenar los modelos finales con todo el train**.
+  *Por qué:* elegidos los hiperparámetros, más datos dan un modelo un poco mejor.
+- **Aplicar el mismo pipeline al test y predecir** (sin volver a ajustarlo).
+  *Por qué:* el test debe transformarse con lo aprendido del train, igual que validación.
+- **Volver a las etiquetas de texto** (`Mala`/`Buena`/`Muy buena`).
+  *Por qué:* el CSV de entrega tiene que ser legible y coincidir con las clases originales.
+- **Generar `output/predicciones_test.csv`** = test original + `pred_arbol` + `pred_rna`
   (verificar 499 filas, mismo orden).
+  *Por qué:* es un entregable obligatorio con ese formato exacto.
 
 ### Fase 6 — Presentación y entrega (día 6–7)
-- Diapositivas (10 min): problema y datos → hallazgos del EDA → preprocesamiento y por qué →
-  experimentos del árbol (evolución) → experimentos de la RNA (evolución) → resultados y
-  comparación → conclusiones.
-- Ensayo con preguntas probables (Claude hace de docente): ¿por qué escalar solo para la RNA?,
-  ¿cómo evitaron la fuga de datos?, ¿por qué F1 macro?, ¿qué hace el early stopping?, etc.
-- Celda final indicando qué partes se hicieron con herramientas de generación de código/texto
-  (requisito del código de honor del enunciado).
-- `.zip` con `.ipynb` + `.csv` + `.pdf`; ambos integrantes suben la misma entrega.
+Objetivo: comunicar el trabajo en 10 minutos y entregar el zip completo.
+
+- **Diapositivas**: problema y datos → hallazgos del EDA → preprocesamiento y por qué →
+  experimentos del árbol → experimentos de la RNA → resultados y comparación → conclusiones.
+  *Por qué:* las diapositivas son el único documento que ve la comisión para evaluar la resolución.
+- **Ensayo con preguntas** (Claude hace de docente): ¿por qué escalar solo para la RNA?, ¿cómo
+  evitaron la fuga de datos?, ¿por qué F1 macro?, ¿qué hace el early stopping?
+  *Por qué:* hay 5 minutos de preguntas y hay que defender cada decisión con palabras propias.
+- **Celda final sobre uso de herramientas de IA**.
+  *Por qué:* lo exige el código de honor del enunciado.
+- **Zip con `.ipynb` + `.csv` + `.pdf`**; ambos integrantes suben la misma entrega.
+  *Por qué:* si las entregas difieren, la cátedra corrige solo una.
 
 ## Verificación
 - Setup: `.venv/bin/python -c "import pandas, sklearn, tensorflow"` funciona.
