@@ -7,7 +7,7 @@ Resultados de `claude-proyecto.ipynb`. Semilla 42; split estratificado 80/20 (10
 
 | Decisión | Motivo |
 |---|---|
-| Año extraído del título | El año no venía como columna; separa algo las clases |
+| Año extraído del título | El año no venía como columna. Por sí solo separa poco las clases (medianas 2000 / 2000 / 1997), pero el árbol puede combinarlo con otros atributos |
 | `budget`/`revenue`/`runtime` = 0 → faltante, más indicadores `*_conocido` | Son datos desconocidos, no ceros reales (~79 % y ~76 %) |
 | `pais_conocido` en vez de `production_company_country` | 90 % de faltantes: no tiene sentido imputar el país |
 | Descartar `movieId`, `title`, nombres de productora, intérpretes y director | Identificadores o miles de valores distintos; las columnas numéricas de popularidad ya los resumen |
