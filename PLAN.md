@@ -77,20 +77,21 @@ puedan usar, sin filtrar información de validación/test. Cada decisión se jus
   "dato conocido"; logaritmo en montos; posibles ratios (revenue/budget).
   *Por qué:* extrae información útil escondida en el texto y corrige los faltantes disfrazados y
   los sesgos detectados en el EDA.
-- **Imputar faltantes** (`SimpleImputer`: mediana en numéricas, "desconocido" en categóricas).
+- **Imputar faltantes** (`fillna`: mediana en numéricas, "desconocido" en categóricas; la mediana se
+  calcula solo con train).
   *Por qué:* los modelos no aceptan vacíos; la mediana es robusta a valores extremos.
 - **Alta cardinalidad** (productoras, directores, actores): descartar, top-N + "Otro", o apoyarse en
   las columnas numéricas de popularidad.
   *Por qué:* un one-hot con miles de valores genera miles de columnas casi vacías.
 - **Codificar categóricas**: `belong_to_collection` → booleano; `genre` → one-hot.
   *Por qué:* los modelos operan con números; one-hot evita inventar un orden entre géneros.
-- **Codificar la etiqueta** a 0/1/2.
-  *Por qué:* Keras necesita la clase como entero para `sparse_categorical_crossentropy`.
-- **Escalar solo para la RNA** (`StandardScaler`).
+- **Codificar la etiqueta** como one-hot (`OneHotEncoder`, como en el labo 3).
+  *Por qué:* la salida de la red es un vector de 3 probabilidades; se usa `categorical_crossentropy`.
+- **Escalar solo para la RNA** (`MinMaxScaler`, como en el labo 3).
   *Por qué:* el árbol compara umbrales y la escala no le afecta; la RNA usa descenso por gradiente
   y escalas muy distintas dificultan el entrenamiento. Pregunta probable en la oral.
-- **Armarlo con `Pipeline` + `ColumnTransformer`**.
-  *Por qué:* garantiza que train, validación y test pasen por exactamente las mismas transformaciones.
+- **Ajustar con train y aplicar a lo demás** (`fit_transform` en train, `transform` en validación y test).
+  *Por qué:* train, validación y test pasan por las mismas transformaciones sin fuga de datos.
 - **No usar la `class` del test** para entrenar ni elegir hiperparámetros. Consultar a la cátedra
   si puede usarse como evaluación final.
   *Por qué:* el test simula datos nunca vistos; usarlo para decidir invalida la evaluación.
@@ -98,16 +99,16 @@ puedan usar, sin filtrar información de validación/test. Cada decisión se jus
 ### Fase 3 — Árbol de decisión (día 3–4)
 Objetivo: entrenar y ajustar un árbol, registrando la evolución de los experimentos.
 
-- **Línea base** (`DummyClassifier`, clase mayoritaria).
+- **Línea base** (predecir siempre la clase mayoritaria).
   *Por qué:* da el piso mínimo; un modelo que no lo supera no aprendió nada.
 - **Árbol por defecto** y comparar accuracy en train vs validación.
   *Por qué:* un árbol sin límites memoriza el train; ver el sobreajuste justifica ajustar parámetros.
 - **Experimentar de a un hiperparámetro**: `max_depth`, `min_samples_leaf`, `criterion`,
   `class_weight`, anotando cada prueba en la bitácora.
   *Por qué:* el enunciado pide mostrar con qué se empezó, qué se varió y en qué orden.
-- **Búsqueda sistemática** (`GridSearchCV` con CV estratificada).
-  *Por qué:* la validación cruzada da una estimación más estable que un solo split.
-- **`random_state` fijo** en el árbol y en la búsqueda.
+- **Barrido conjunto** de profundidad × mínimo por hoja con dos `for` (como el barrido del labo 2).
+  *Por qué:* la mejor profundidad puede cambiar al exigir un mínimo por hoja.
+- **`random_state` fijo** en el árbol y en la división de los datos.
   *Por qué:* resultados reproducibles y comparables entre experimentos.
 - **Métricas**: accuracy, F1 macro, matriz de confusión, `classification_report`.
   *Por qué:* la matriz muestra qué clases se confunden; F1 macro no se deja engañar por el desbalance.
@@ -120,7 +121,7 @@ Objetivo: entrenar y ajustar una RNA, registrando la evolución de los experimen
 - **Imports de Keras y semilla global** (`keras.utils.set_random_seed`) al inicio de la sección.
   *Por qué:* los pesos iniciales son aleatorios; sin semilla cada corrida da resultados distintos.
 - **Modelo inicial chico** (1 capa oculta densa + ReLU, salida softmax de 3 neuronas, Adam,
-  `sparse_categorical_crossentropy`).
+  `categorical_crossentropy`).
   *Por qué:* empezar simple da una referencia; softmax produce una probabilidad por clase.
 - **Curvas de aprendizaje** (loss y accuracy, train vs validación, por época).
   *Por qué:* muestran si el modelo aprende, si sobreajusta (validación empeora) o si le falta capacidad.
