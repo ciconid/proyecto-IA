@@ -76,5 +76,5 @@ Confirma el orden de validación en F1 macro. La red predice *Muy buena* solo pa
 ## Sacado en la simplificación (no aparece en la teoría ni en los laboratorios)
 
 Criterio Gini/entropía, `class_weight`, `min_samples_leaf` (reemplazado por `min_samples_split`), Dropout,
-early stopping, línea base, matrices de confusión, importancia de atributos, boxplots e imputación con la
-mediana (reemplazada por el promedio).
+early stopping, línea base, matrices de confusión, importancia de atributos e imputación con la mediana
+(reemplazada por el promedio). Los boxplots del análisis exploratorio (2.7) se mantienen.
