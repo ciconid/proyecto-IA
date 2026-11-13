@@ -1,0 +1,128 @@
+% Preámbulo genérico para informes y documentos (skill informe-latex).
+% Uso: copiar este archivo al proyecto como plantilla/preambulo.tex y, desde el documento,
+%   \documentclass[11pt,a4paper]{article}
+%   \input{plantilla/preambulo}      (ruta relativa al .tex)
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[spanish,es-noshorthands,es-tabla]{babel}
+\usepackage{lmodern}
+\usepackage{microtype}
+\usepackage[margin=2.3cm]{geometry}
+\usepackage{xcolor}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{array}
+\usepackage{enumitem}
+\usepackage{tcolorbox}
+\usepackage{titlesec}
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage{caption}
+\usepackage{tikz}
+\usepackage[hang,flushmargin]{footmisc}
+\usepackage[hidelinks]{hyperref}
+
+\usetikzlibrary{babel,arrows.meta,positioning,calc,fit,decorations.pathreplacing}
+\tcbuselibrary{skins,breakable}
+
+\definecolor{azul}{HTML}{1F4E79}
+\definecolor{gris}{HTML}{6B7280}
+\definecolor{ambar}{HTML}{B45309}
+\definecolor{fondoazul}{HTML}{F3F7FB}
+\definecolor{fondogris}{HTML}{F4F4F5}
+\definecolor{fondoambar}{HTML}{FFF7ED}
+
+\titleformat{\section}{\Large\bfseries\color{azul}}{\thesection}{0.6em}{}
+\titleformat{\subsection}{\large\bfseries}{\thesubsection}{0.6em}{}
+\setcounter{tocdepth}{2}
+
+% --- Opciones de estructura (llamar en el preámbulo del documento, antes de \begin{document}) ---
+% Secciones sin número visible (siguen entrando al índice si se usan sin asterisco).
+\newcommand{\sinnumeros}{\setcounter{secnumdepth}{0}}
+% Cada \section empieza en página nueva.
+\newcommand{\sectionbreak}{}
+\newcommand{\seccionesenpaginanueva}{\renewcommand{\sectionbreak}{\clearpage}}
+% Índice con hipervínculos (después de \maketitle). No fuerza página nueva entre entradas.
+\newcommand{\indice}{{\renewcommand{\sectionbreak}{\addvspace{1.5em}}%
+  \hypersetup{linktoc=all}\tableofcontents}}
+
+% --- Cajas ---
+% Recuadro neutro (gris): consignas, requisitos, datos de entrada, texto citado largo.
+%   \begin{recuadro}{Consigna} ... \end{recuadro}
+\newtcolorbox{recuadro}[1]{
+  breakable, enhanced, colback=fondogris, colframe=gris,
+  boxrule=0.4pt, left=6pt, right=6pt, top=4pt, bottom=4pt,
+  title={\bfseries #1}, coltitle=white, colbacktitle=gris, fonttitle=\small, fontupper=\small}
+% Destacado (azul): conclusión, resumen ejecutivo, definición clave.
+\newtcolorbox{destacado}[1]{
+  breakable, enhanced, colback=fondoazul, colframe=azul,
+  boxrule=0.5pt, left=6pt, right=6pt, top=5pt, bottom=5pt,
+  title={\bfseries #1}, coltitle=white, colbacktitle=azul, fonttitle=\small}
+% Advertencias, supuestos, ambigüedades, erratas (ámbar).
+\newtcolorbox{aviso}[1]{
+  breakable, enhanced, colback=fondoambar, colframe=ambar,
+  boxrule=0.5pt, left=6pt, right=6pt, top=5pt, bottom=5pt,
+  title={\bfseries #1}, coltitle=white, colbacktitle=ambar, fonttitle=\small}
+% Ampliación opcional (franja azul). No es una tcolorbox: las notas al pie dentro de
+% una tcolorbox que se parte entre páginas se superponen con el contenido.
+%   \begin{extras} ... \end{extras}      o      \begin{extras}[PARA PROFUNDIZAR] ... \end{extras}
+\newenvironment{extras}[1][EXTRAS]{%
+  \par\medskip\noindent
+  {\setlength{\fboxsep}{3pt}\colorbox{azul}{\color{white}\bfseries\small\ #1\ }}%
+  \par\nobreak\vspace{1pt}{\color{azul}\hrule height 0.6pt}\nobreak\vspace{3pt}}
+ {\par\vspace{3pt}{\color{azul}\hrule height 0.6pt}\medskip}
+
+\setlist[itemize]{itemsep=2pt, topsep=3pt, parsep=0pt}
+\setlist[enumerate]{itemsep=2pt, topsep=3pt, parsep=0pt}
+\captionsetup{font=small, labelfont=bf}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{4pt}
+
+% --- Citas y fuentes ---
+% Cita textual en el idioma original, sin traducir.
+\newcommand{\cita}[1]{``\textit{#1}''}
+% Fuente en nota al pie (nunca en el cuerpo):  \fuente{Autor, \textit{Título}, §2.1, p.~34}
+% Varias fuentes en una nota: separarlas con «;».
+\newcommand{\fuente}[1]{\footnote{#1.}}
+% Nota inicial que explica abreviaturas de fuentes:  \notafuentes{\textbf{AIMA}: Russell \& Norvig, ...}
+\newcommand{\notafuentes}[1]{{\small\color{gris} Las fuentes van en notas al pie. #1\par}}
+
+% Íconos reutilizables (pics de TikZ). Uso: \pic[scale=0.8] at (x,y) {robot};
+\tikzset{
+  pics/robot/.style={code={
+    \draw[thick, fill=azul!15] (-0.35,0.15) rectangle (0.35,0.65);            % cabeza
+    \fill[azul] (-0.15,0.42) circle (0.06) (0.15,0.42) circle (0.06);         % ojos
+    \draw[thick] (0,0.65) -- (0,0.8); \fill[ambar] (0,0.83) circle (0.05);    % antena
+    \draw[thick, fill=azul!15] (-0.45,-0.45) rectangle (0.45,0.12);           % cuerpo
+    \draw[thick] (-0.45,-0.1) -- (-0.65,0.1) (0.45,-0.1) -- (0.65,0.1);       % brazos
+    \draw[thick, fill=gris!40] (-0.25,-0.55) circle (0.12) (0.25,-0.55) circle (0.12); % ruedas
+  }},
+  pics/compu/.style={code={
+    \draw[thick, fill=azul!15, rounded corners=1pt] (-0.55,-0.25) rectangle (0.55,0.5); % pantalla
+    \node[font=\tiny\ttfamily\bfseries, text=azul] at (0,0.12) {</>};
+    \draw[thick] (0,-0.25) -- (0,-0.4); \draw[thick] (-0.25,-0.4) -- (0.25,-0.4);       % pie
+  }},
+  pics/persona/.style={code={
+    \draw[thick] (0,0.35) circle (0.1);
+    \draw[thick] (0,0.25) -- (0,-0.05) (-0.15,0.15) -- (0.15,0.15)
+                 (0,-0.05) -- (-0.12,-0.3) (0,-0.05) -- (0.12,-0.3);
+  }},
+  pics/arbol/.style={code={
+    \draw[thick, brown!60!black] (0,-0.3) -- (0,0);
+    \fill[green!50!black!70] (0,0.15) circle (0.2);
+  }},
+  pics/documento/.style={code={
+    \draw[thick, fill=white] (-0.2,-0.28) -- (-0.2,0.28) -- (0.1,0.28) -- (0.2,0.18) -- (0.2,-0.28) -- cycle;
+    \foreach \y in {0.1,0,-0.1} \draw[gris] (-0.12,\y) -- (0.12,\y);
+  }},
+  pics/sobre/.style={code={
+    \draw[thick, fill=white] (-0.25,-0.17) rectangle (0.25,0.17);
+    \draw[thick] (-0.25,0.17) -- (0,-0.02) -- (0.25,0.17);
+  }},
+}
+
+% --- Macros propios del proyecto ---
+\usepackage{needspace}
+% Fuentes frecuentes
+\newcommand{\nb}[1]{\footnote{NB, §#1.}}
+\newcommand{\teo}[1]{\footnote{Teoría, clase #1.}}

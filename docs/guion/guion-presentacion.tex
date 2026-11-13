@@ -1,0 +1,661 @@
+\documentclass[11pt,a4paper]{article}
+\input{../../plantilla/preambulo}
+
+\newcommand{\pres}{../../entregables/presentacion-Bertotto-Cid.pdf}
+% \slide{n}{título}{tiempo}: encabezado de cada slide con su miniatura
+\newcommand{\slide}[3]{%
+  \needspace{24\baselineskip}
+  \subsection{Slide #1 · #2}
+  \begin{center}
+    \fcolorbox{gris!50}{white}{\includegraphics[page=#1,width=0.52\linewidth]{\pres}}\\[2pt]
+    {\small\color{gris} Tiempo sugerido: \textbf{#3}}
+  \end{center}}
+\newenvironment{speech}{\begin{destacado}{Qué decir}}{\end{destacado}}
+
+\title{\vspace{-1.5cm}\textbf{Guion de la presentación}\\[3pt]
+\large Clasificación de películas con un árbol de decisión y una red neuronal}
+\author{\normalsize Tomás Bertotto y Nicolás Cid --- Inteligencia Artificial, UNS --- 2026}
+\date{}
+
+\begin{document}
+\maketitle
+\vspace{-1cm}
+\notafuentes{\textbf{NB}: notebook entregado (\texttt{proyecto-Bertotto-Cid.ipynb}), con su número de sección.
+\textbf{Teoría}: diapositivas de la cátedra (clases 9, 10 y 11 de Aprendizaje Automático).}
+
+\indice
+
+\section{Cómo usar este guion}
+
+\begin{itemize}
+  \item Cada slide tiene: su miniatura, el tiempo sugerido, el texto para decir (caja azul) y, debajo,
+        \textbf{Para entenderlo}: conceptos y datos que no se dicen pero conviene saber para defenderlo.
+  \item El texto está escrito para decirse en voz alta; no hace falta leerlo literal. Lo importante son
+        las ideas en \textbf{negrita}.
+  \item Al final hay un banco de preguntas posibles con respuestas cortas, y los puntos débiles del
+        trabajo con cómo responderlos.
+\end{itemize}
+
+\begin{center}
+\small
+\begin{tabularx}{\linewidth}{@{}r X r r@{}}
+\toprule
+\# & Slide & Tiempo & Acumulado \\
+\midrule
+1  & Portada                               & 15 s & 0:15 \\
+2  & Los datos                             & 40 s & 0:55 \\
+3  & Problemas encontrados                 & 45 s & 1:40 \\
+4  & Colas largas y el logaritmo           & 35 s & 2:15 \\
+5  & Qué atributos separan las clases      & 40 s & 2:55 \\
+6  & Decisiones y por qué                  & 55 s & 3:50 \\
+7  & Sin fuga de datos                     & 40 s & 4:30 \\
+8  & El árbol por defecto memoriza         & 40 s & 5:10 \\
+9  & Árbol: evolución de los experimentos  & 55 s & 6:05 \\
+10 & La popularidad decide primero         & 35 s & 6:40 \\
+11 & Cuándo dejar de entrenar              & 45 s & 7:25 \\
+12 & Red: evolución de los experimentos    & 55 s & 8:20 \\
+13 & Árbol contra red, en validación       & 40 s & 9:00 \\
+14 & Elegimos el árbol                     & 35 s & 9:35 \\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+Quedan unos 25 segundos de margen. Si el tiempo aprieta, los lugares para recortar son la slide 5 (dejar solo
+la popularidad) y la 12 (no detallar R6 y R7).
+
+\begin{destacado}{La historia en tres frases}
+\begin{enumerate}
+  \item Los datos tienen trampas (ceros que significan ``no se sabe'', faltantes, colas largas, nombres
+        con miles de valores) y las tratamos antes de entrenar, \textbf{sin fuga de datos}.
+  \item Los dos modelos \textbf{sobreajustan} si no se los limita; los experimentos consisten en
+        controlar eso (profundidad y mínimo para dividir en el árbol; capacidad y épocas en la red).
+  \item El \textbf{árbol gana} (0.670 contra 0.644 de F1 macro), sobre todo en \textit{Muy buena}, y
+        además es más simple y se puede leer.
+\end{enumerate}
+\end{destacado}
+
+\clearpage
+\section{Guion por slide}
+
+% ------------------------------------------------------------------
+\slide{1}{Portada}{15 s}
+
+\begin{speech}
+Buenas. Somos Tomás Bertotto y Nicolás Cid. Nuestro proyecto consiste en \textbf{clasificar películas en
+tres categorías}: Mala, Buena y Muy buena, a partir de sus datos. Para eso construimos y comparamos
+\textbf{dos modelos}: un árbol de decisión y una red neuronal.
+\end{speech}
+
+\begin{extras}[PARA ENTENDERLO]
+\begin{itemize}
+  \item Es \textbf{aprendizaje supervisado}: cada ejemplo de entrenamiento trae su clase, y el modelo
+        aprende a predecirla a partir de los atributos.
+  \item Es \textbf{clasificación ternaria} (tres clases), no regresión: la salida es una categoría, no un número.
+\end{itemize}
+\end{extras}
+
+% ------------------------------------------------------------------
+\slide{2}{Los datos}{40 s}
+
+\begin{speech}
+Partimos de \textbf{12.500 películas etiquetadas} para entrenar y \textbf{500 de test}, para las que
+tenemos que predecir la clase. Cada película tiene atributos propios (género, presupuesto, ingresos,
+duración, popularidad, productora), datos de sus tres intérpretes principales y de su director.
+
+Lo primero que miramos fue la distribución de la clase: Buena es casi la mitad, Mala un 38\,\%, y
+\textbf{Muy buena apenas un 15\,\%}. Este desbalance condiciona cómo evaluamos: con la accuracy sola, un
+modelo que casi nunca dice ``Muy buena'' igual puede sacar un buen número. Por eso la métrica principal es
+el \textbf{F1 macro}, que promedia el F1 de cada clase y les da a las tres el mismo peso.
+\end{speech}
+
+\begin{extras}[PARA ENTENDERLO]
+\begin{itemize}
+  \item \textbf{Precisión} de una clase: de las veces que el modelo dijo esa clase, cuántas acertó.
+        \textbf{Recall}: de los ejemplos que realmente son de esa clase, cuántos encontró.
+  \item \textbf{F1} $= \dfrac{2PR}{P+R}$, la media armónica: es baja si cualquiera de las dos es baja.
+        Ejemplo real: el árbol en \textit{Muy buena} tiene precisión 0.683 y recall 0.393, y F1 0.499.\nb{4.7}
+  \item \textbf{Macro}: promedio simple de los F1 de las tres clases (fila \texttt{macro avg} de
+        \texttt{classification\_report}). El \texttt{weighted avg}, en cambio, pondera por cantidad de
+        ejemplos, y ahí \textit{Muy buena} pesa poco.
+  \item Por qué la accuracy engaña: un modelo que nunca dice \textit{Muy buena} puede acertar hasta el
+        85\,\% como máximo, pero su F1 en esa clase es 0 y el F1 macro cae mucho.
+\end{itemize}
+\end{extras}
+
+% ------------------------------------------------------------------
+\slide{3}{Problemas encontrados}{45 s}
+
+\begin{speech}
+En el análisis exploratorio encontramos cuatro problemas. El \textbf{79\,\%} de las películas tiene
+presupuesto igual a cero, y el \textbf{76\,\%} ingresos igual a cero. Una película no puede costar cero:
+\textbf{ese cero significa ``no se sabe''}. Si lo dejáramos como número, el modelo lo trataría como una
+película muy barata.
+
+El país de la productora falta en el \textbf{90\,\%} de los casos. Y los nombres de intérpretes,
+directores y productoras tienen \textbf{miles de valores distintos}, casi uno por película. Además la
+duración falta en un 10\,\%, y las variables de dinero y popularidad tienen colas muy largas, que se ven
+en la próxima slide.
+\end{speech}
+
+\begin{extras}[PARA ENTENDERLO]
+\begin{itemize}
+  \item Un \textbf{cero disfrazado} es peor que un faltante explícito: \texttt{isna()} no lo detecta y los
+        modelos lo usan como un valor real. Por eso lo buscamos aparte, con \texttt{(train[col] == 0).mean()}.\nb{2.4}
+  \item Lo mismo pasa con \texttt{runtime}: una duración de 0 minutos tampoco es posible.
+  \item \textbf{Alta cardinalidad}: una variable categórica con muchísimos valores distintos.
+\end{itemize}
+\end{extras}
+
+% ------------------------------------------------------------------
+\slide{4}{Colas largas y el logaritmo}{35 s}
+
+\begin{speech}
+Arriba están los histogramas originales de presupuesto, ingresos, popularidad y duración. Casi todo se
+amontona en una barra pegada al cero, porque \textbf{unos pocos valores enormes estiran el eje}. Abajo
+aplicamos \textbf{logaritmo de uno más x}, sin los ceros, y las distribuciones quedan mucho más simétricas
+y comparables. Al árbol esto no le cambia nada, pero a la red neuronal sí, como vamos a ver en el
+preprocesamiento.
+\end{speech}
+
+\begin{extras}[PARA ENTENDERLO]
+\begin{itemize}
+  \item Se usa $\log(1+x)$ y no $\log(x)$ porque $\log(0)$ no está definido; con el $+1$, el 0 va a 0.
+  \item El logaritmo \textbf{comprime la cola}: pasar de 1 millón a 100 millones es multiplicar por 100,
+        pero en escala logarítmica es solo sumar $\log(100) \approx 4{,}6$.
+  \item Es \textbf{monótono} (mantiene el orden): por eso al árbol no le cambia nada, porque solo compara
+        contra umbrales.
+  \item El año no lleva logaritmo: no tiene cola larga.\nb{5.1}
+\end{itemize}
+\end{extras}
+
+% ------------------------------------------------------------------
+\slide{5}{Qué atributos separan las clases}{40 s}
+
+\begin{speech}
+También miramos qué atributos se relacionan con la clase. \textbf{La popularidad de la película es el más
+claro}: el promedio es 4.9 en las Malas, contra 15.4 en las Buenas y 23.4 en las Muy buenas; en el
+boxplot, las Malas quedan claramente abajo. La popularidad del intérprete principal muestra diferencias
+chicas, y el año, que sacamos del título, casi no cambia entre clases. Igual lo dejamos: solo no separa,
+pero el árbol lo puede combinar con otros atributos. El género también ayuda: por ejemplo, el 69\,\% de
+las películas de terror son Malas.
+\end{speech}
+
+\begin{extras}[PARA ENTENDERLO]
+\begin{itemize}
+  \item \textbf{Cómo se lee un boxplot}: la caja va del cuartil 1 al 3 (el 50\,\% central de los datos),
+        la línea interna es la mediana, los bigotes llegan hasta 1,5 veces el ancho de la caja y los
+        puntos sueltos son valores atípicos.
+  \item Los boxplots de popularidad están en escala $\log(1+x)$; si no, la cola larga aplastaría las cajas.
+  \item Otro dato del género: \textit{Documentary} es el que tiene más proporción de \textit{Muy buena} (35\,\%).\nb{2.9}
+  \item Que esto lo hayamos visto en el análisis exploratorio y después el árbol lo confirme (slide 10)
+        es un buen argumento de coherencia del trabajo.
+\end{itemize}
+\end{extras}
+
+% ------------------------------------------------------------------
+\slide{6}{Decisiones y por qué}{55 s}
+
+\begin{speech}
+Con esto tomamos estas decisiones. Extrajimos el \textbf{año del título}, porque no venía como columna.
+Los ceros de presupuesto, ingresos y duración pasan a ser \textbf{faltantes}, y agregamos un
+\textbf{indicador} de si el dato se conocía, porque que la película tenga el presupuesto publicado ya
+puede ser información.
+
+Al país no lo completamos: con 90\,\% de faltantes \textbf{estaríamos inventando casi todos los valores};
+nos quedamos solo con si se conoce o no. Descartamos identificadores, título y nombres: con miles de
+valores, un one-hot generaría miles de columnas casi vacías y el modelo memorizaría nombres; la
+\textbf{popularidad numérica de cada persona ya resume esa información}.
+
+El género, que tiene 8 valores sin orden, va con \textbf{one-hot}. Los faltantes numéricos se completan
+con el \textbf{promedio}, como hicimos con la edad en el laboratorio 1. Y \textbf{solo para la red}
+aplicamos el logaritmo y escalamos al intervalo de menos uno a uno, porque el descenso por gradiente
+necesita escalas comparables.
+\end{speech}
+
+\begin{extras}[PARA ENTENDERLO]
+\begin{itemize}
+  \item \textbf{One-hot}: una columna 0/1 por cada valor del género. Se usa en vez de numerar los géneros
+        (1, 2, 3\dots) porque eso inventaría un orden y distancias que no existen (``Drama'' no es el
+        doble de ``Comedia''). Los faltantes de género pasan a ser la categoría ``Desconocido''.
+  \item Resultado: \textbf{28 atributos} (15 numéricos, 4 binarios y las columnas del género).\nb{4.1}
+  \item El orden importa: los ceros pasan a faltante \textbf{antes} de calcular el promedio; si no, el
+        promedio del presupuesto saldría tirado hacia cero.
+  \item \texttt{belong\_to\_collection} (si es parte de una saga) se pasa a 0/1.
+  \item \texttt{MinMaxScaler(-1, 1)}: $x' = -1 + 2\,\dfrac{x - \min}{\max - \min}$, con mínimo y máximo
+        de cada columna calculados en el entrenamiento.
+\end{itemize}
+\end{extras}
+
+% ------------------------------------------------------------------
+\slide{7}{Sin fuga de datos}{40 s}
+
+\begin{speech}
+Un punto que cuidamos especialmente es la \textbf{fuga de datos}. Primero \textbf{dividimos}: 80\,\%
+para entrenar y 20\,\% para validar, de forma \textbf{estratificada}, para que las dos partes tengan la
+misma proporción de clases. Recién después \textbf{ajustamos} las transformaciones: los promedios, las
+columnas del one-hot y el escalador se calculan \textbf{solo con el entrenamiento}. Y eso se
+\textbf{aplica} igual, sin recalcular, a validación y a test. Si el escalador o los promedios vieran la
+validación, estaríamos evaluando con información que el modelo no debería tener, y las métricas
+saldrían infladas.
+\end{speech}
+
+\begin{center}
+\begin{tikzpicture}[caja/.style={draw=azul, fill=fondoazul, rounded corners=2pt, align=center,
+    font=\small, minimum width=2.6cm, minimum height=0.9cm},
+  flecha/.style={-{Stealth[length=2mm]}, thick, draw=azul}]
+  \node[caja] (ent) at (0,0) {Entrenamiento\\(10.000)};
+  \node[caja, right=1.4cm of ent] (aj) {Calcular promedios,\\one-hot, escalador};
+  \node[caja, right=1.4cm of aj] (val) {Validación (2.500)\\y test (500)};
+  \draw[flecha] (ent) -- node[above, font=\scriptsize] {fit} (aj);
+  \draw[flecha] (aj) -- node[above, font=\scriptsize] {transform} (val);
+\end{tikzpicture}
+\end{center}
+
+\begin{extras}[PARA ENTENDERLO]
+\begin{itemize}
+  \item Es el mismo patrón \texttt{fit\_transform} / \texttt{transform} del laboratorio 3. En el notebook,
+        \texttt{preprocesar} y \texttt{escalar} reciben primero el conjunto con el que se ajusta y
+        después los demás.\nb{3.4, 5.1}
+  \item \textbf{Validación} sirve para elegir entre experimentos; \textbf{test} no se usa para decidir nada.
+  \item Las transformaciones fila a fila (extraer el año, ceros a faltante) no aprenden nada de los datos,
+        así que no generan fuga y se pueden hacer antes de dividir.\nb{3.1}
+  \item Para el modelo final, todo se vuelve a ajustar con el train completo (12.500) y se aplica al test.
+\end{itemize}
+\end{extras}
+
+% ------------------------------------------------------------------
+\slide{8}{El árbol por defecto memoriza}{40 s}
+
+\begin{speech}
+Arrancamos con el \textbf{árbol de decisión con los parámetros por defecto}. Sin límites, crece hasta
+profundidad 30, con 1763 hojas, y acierta el \textbf{100\,\% del entrenamiento} pero solo el
+\textbf{67\,\% de validación}: memorizó los ejemplos en lugar de aprender reglas generales. Eso es
+\textbf{sobreajuste}.
+
+El gráfico muestra el F1 macro según la profundidad máxima: la curva azul, de entrenamiento, sube
+siempre; la naranja, de validación, sube hasta \textbf{profundidad 10} y después se estanca y baja. Ahí
+el árbol deja de aprender patrones y empieza a memorizar.
+\end{speech}
+
+\begin{extras}[PARA ENTENDERLO]
+\begin{itemize}
+  \item \textbf{Sobreajuste}: rinde mucho mejor en entrenamiento que en datos nuevos. \textbf{Subajuste}:
+        rinde mal en los dos porque el modelo es demasiado simple (la zona izquierda del gráfico, con
+        profundidad 2 a 5).
+  \item Un árbol sin límites sigue dividiendo hasta que cada hoja es \textbf{pura} (una sola clase); por
+        eso llega al 100\,\%. 1763 hojas para 10.000 ejemplos son menos de 6 ejemplos por hoja.
+  \item Scikit-learn usa \textbf{CART}: cortes binarios ``atributo $\le$ umbral'', y elige el corte que
+        más reduce la impureza de \textbf{Gini}, $1 - \sum_i p_i^2$ (criterio por defecto).\teo{10}
+        ID3, el otro algoritmo de la teoría, usa la entropía y la ganancia de información.
+\end{itemize}
+\end{extras}
+
+% ------------------------------------------------------------------
+\slide{9}{Árbol: evolución de los experimentos}{55 s}
+
+\begin{speech}
+La tabla resume la evolución. \textbf{E1} es el árbol por defecto: F1 de 1 en entrenamiento y 0.624 en
+validación. En \textbf{E2} limitamos la profundidad a 10, el mejor valor de un barrido de 2 a 20, y
+validación sube a 0.665.
+
+En \textbf{E3} agregamos \texttt{min\_samples\_split}, el mínimo de ejemplos que necesita un nodo para
+poder dividirse. Con 100, el F1 de validación mejora apenas, a 0.670, pero lo importante es que
+\textbf{la brecha entre entrenamiento y validación baja mucho}: el árbol rinde casi igual en datos vistos
+y nuevos.
+
+Como ajustamos un parámetro por vez, en \textbf{E4} probamos las 25 combinaciones de los dos juntos,
+porque la mejor profundidad podía cambiar al exigir un mínimo. El barrido \textbf{confirmó el mínimo de
+100}; profundidad 10 y 12 empataron, y elegimos 12. El árbol final tiene \textbf{162 hojas}, contra 1763
+del original. Todo con semilla fija, para que sea reproducible.
+\end{speech}
+
+\begin{extras}[PARA ENTENDERLO]
+\begin{itemize}
+  \item Brecha de F1 entre entrenamiento y validación: E2 0.075, E3 0.020. Con
+        \texttt{min\_samples\_split=200} el árbol ya subajusta (0.651 y 0.648).\nb{4.4}
+  \item Grilla del barrido conjunto: profundidad 6, 8, 10, 12, 15 por mínimo 2, 10, 50, 100, 200. Con
+        profundidad 6 ninguna combinación pasa de 0.583.\nb{4.5}
+  \item Que dos configuraciones empaten muestra que \textbf{el resultado no depende de un valor exacto}:
+        es una zona estable, no un pico casual.
+  \item \texttt{min\_samples\_split} actúa como una \textbf{pre-poda}: frena el crecimiento antes, en vez
+        de podar el árbol después de construido.
+  \item E1 a E4 se evalúan siempre en el mismo conjunto de validación; la semilla es
+        \texttt{random\_state=42}.
+\end{itemize}
+\end{extras}
+
+% ------------------------------------------------------------------
+\slide{10}{La popularidad decide primero}{35 s}
+
+\begin{speech}
+Una ventaja del árbol es que \textbf{se puede leer}. Estos son los primeros niveles del árbol elegido. El
+primer corte es la \textbf{popularidad de la película}, y el segundo nivel también: por ejemplo, las 685
+películas de entrenamiento con popularidad menor a 1.2 son \textbf{todas Malas}. Después aparece la
+popularidad de las películas de los intérpretes. Esto \textbf{coincide con el análisis exploratorio}: la
+popularidad era el atributo que mejor separaba las clases.
+\end{speech}
+
+\begin{extras}[PARA ENTENDERLO]
+\begin{itemize}
+  \item \textbf{Cómo leer cada nodo}: la condición del corte (si se cumple, se va a la izquierda);
+        \texttt{samples}, cuántos ejemplos de entrenamiento llegan; \texttt{value}, cuántos hay de cada
+        clase; \texttt{class}, la clase mayoritaria, que es lo que predeciría si fuera hoja.
+  \item \textbf{Ojo, pregunta trampa}: el orden de \texttt{value} es \textbf{alfabético}, como
+        \texttt{classes\_}: [Buena, Mala, Muy buena]. La raíz tiene [4615, 3846, 1539]: 4615 Buenas
+        (46\,\%), 3846 Malas y 1539 Muy buenas.
+  \item Gini de la raíz: $1 - (0{,}46^2 + 0{,}38^2 + 0{,}15^2) \approx 0{,}62$. La hoja de 685 Malas
+        tiene Gini 0 (pura).
+  \item Los umbrales están en la escala original de la popularidad, porque el árbol no usa escalado
+        ni logaritmo.
+  \item El color indica la clase mayoritaria (verde Mala, naranja Buena) y la intensidad, qué tan pura es.
+  \item Se muestran solo 2 niveles (\texttt{plot\_tree(max\_depth=2)}); el árbol completo tiene 12.
+\end{itemize}
+\end{extras}
+
+% ------------------------------------------------------------------
+\slide{11}{Cuándo dejar de entrenar}{45 s}
+
+\begin{speech}
+Pasamos a la \textbf{red neuronal}. El modelo base son capas densas con \textbf{ReLU}, una salida
+\textbf{softmax} de 3 neuronas (una probabilidad por clase), optimizador \textbf{Adam} y, como pérdida, la
+\textbf{entropía cruzada categórica}, como en el laboratorio 3.
+
+La pregunta clave es \textbf{cuántas épocas entrenar}. Para eso pasamos la validación al entrenamiento y
+miramos las curvas. Este ejemplo es la red más grande, de tres capas: la pérdida de entrenamiento baja
+todo el tiempo, pero la de validación \textbf{toca su mínimo en la época 4 y después sube sin parar}. Eso
+es sobreajuste. El criterio fue: cada configuración se entrena primero con muchas épocas, y \textbf{la
+época con menor pérdida en validación nos dice cuántas usar}.
+\end{speech}
+
+\begin{extras}[PARA ENTENDERLO]
+\begin{itemize}
+  \item \textbf{Época}: una pasada completa por los 10.000 ejemplos. \textbf{Batch}: cuántos ejemplos se
+        procesan antes de actualizar los pesos (32 por defecto: unas 313 actualizaciones por época).
+  \item \textbf{ReLU}: $\max(0, x)$. Es la activación de las capas ocultas; sin una función no lineal,
+        varias capas equivaldrían a una sola transformación lineal.
+  \item \textbf{Softmax}: convierte las 3 salidas en probabilidades que suman 1; la clase predicha es la
+        de mayor probabilidad (\texttt{argmax}).
+  \item \textbf{Entropía cruzada}: $-\log(p)$ de la probabilidad que la red le dio a la clase correcta.
+        Vale 0 si la red da probabilidad 1 a la clase correcta y crece mucho cuando está segura y se
+        equivoca. Necesita la clase como vector one-hot, por ejemplo Buena $\to (0, 1, 0)$.
+  \item \textbf{Entrenamiento}: \textit{backpropagation} calcula cuánto contribuye cada peso al error, y
+        el descenso por gradiente ajusta cada peso un paso en la dirección que lo reduce.\teo{11}
+        \textbf{Adam} es una variante que adapta el tamaño del paso para cada peso.
+  \item La curva de la derecha (accuracy) cuenta lo mismo: entrenamiento sube, validación baja.
+\end{itemize}
+\end{extras}
+
+% ------------------------------------------------------------------
+\slide{12}{Red: evolución de los experimentos}{55 s}
+
+\begin{speech}
+Esta es la evolución de la red. \textbf{R1}, una sola capa oculta de 16 neuronas con 200 épocas, llega a
+0.644 de F1 en validación y \textbf{no sobreajusta}: su pérdida de validación se estabiliza y no vuelve a
+subir.
+
+Después probamos \textbf{más capacidad}. Con dos capas de 64 y 32, R2 sobreajusta desde la época 26;
+cortando ahí, en R3, mantiene el F1 con mucha menos brecha, pero no supera a R1. Con tres capas, R4
+sobreajusta desde la época 4, y si cortamos en 4, R5 no llega a aprender.
+
+Partiendo de R3 variamos la \textbf{tasa de aprendizaje}, las dos filas R6: con 0.0001 todavía está
+aprendiendo al final, y con 0.01 sobreajusta en la época 7. Y con \textbf{batch de 128}, R7 hace cuatro
+veces menos actualizaciones y rinde algo peor. Todas quedan entre 0.594 y 0.644: \textbf{agregar
+capacidad no ayudó}, y nos quedamos con la red más chica.
+\end{speech}
+
+\begin{extras}[PARA ENTENDERLO]
+\begin{itemize}
+  \item \textbf{Cantidad de pesos} (cada neurona tiene un peso por entrada más un sesgo):
+        R1: $28 \cdot 16 + 16 + 16 \cdot 3 + 3 = 515$. R4: unos 14.000 (14.147). Con 10.000 ejemplos,
+        R4 tiene más parámetros que ejemplos: por eso memoriza tan rápido.
+  \item \textbf{Tasa de aprendizaje}: el tamaño de cada paso del descenso por gradiente. Muy chica, aprende
+        lento; muy grande, los pasos se pasan del mínimo y el entrenamiento es inestable.
+  \item \textbf{Batch más grande}: gradiente menos ruidoso pero menos actualizaciones por época
+        (79 contra 313).
+  \item Se variaron \textbf{uno por vez}, partiendo de la mejor configuración anterior, para saber a qué
+        atribuir cada cambio.
+  \item La red final es R1 \textbf{reentrenada con el train completo}, 200 épocas.\nb{5.10}
+\end{itemize}
+\end{extras}
+
+% ------------------------------------------------------------------
+\slide{13}{Árbol contra red, en validación}{40 s}
+
+\begin{speech}
+Comparamos los dos modelos elegidos sobre \textbf{el mismo conjunto de validación}. El árbol saca 0.723
+de accuracy y \textbf{0.670 de F1 macro}; la red, 0.714 y \textbf{0.644}. En las clases frecuentes, Mala y
+Buena, están \textbf{prácticamente parejos}; la red incluso es un poco mejor en Mala. La diferencia está
+en \textbf{Muy buena}: F1 de 0.499 contra 0.422. Si miramos el recall, de las películas que realmente son
+Muy buenas, el árbol encuentra el 39\,\% y la red el 32\,\%. Es la clase minoritaria, y la que les cuesta
+a los dos.
+\end{speech}
+
+\begin{extras}[PARA ENTENDERLO]
+\begin{itemize}
+  \item En \textit{Muy buena} los dos tienen precisión aceptable (0.68 y 0.64) pero recall bajo: cuando
+        dicen ``Muy buena'' suelen acertar, pero \textbf{la dicen pocas veces}.\nb{4.7, 5.9}
+  \item Es esperable: con solo el 15\,\% de ejemplos, minimizar el error general empuja a los modelos
+        hacia las clases frecuentes.
+  \item La diferencia de accuracy (0.009) es chica; la de F1 macro (0.026) es más grande justamente
+        porque el F1 macro le da peso a \textit{Muy buena}.
+\end{itemize}
+\end{extras}
+
+% ------------------------------------------------------------------
+\slide{14}{Elegimos el árbol}{35 s}
+
+\begin{speech}
+En conclusión, \textbf{elegimos el árbol}. Primero, por el número: 0.670 de F1 macro contra 0.644.
+Segundo, porque es \textbf{más simple}: 162 hojas, no necesita escalado y podemos leer qué atributos usa
+para decidir. Y tercero, una conclusión sobre el problema: la red más chica fue la mejor, y las grandes
+sobreajustaban en pocas épocas. Eso nos indica que \textbf{el límite no está en la capacidad del modelo
+sino en la información que tienen los atributos}. Gracias. ¿Preguntas?
+\end{speech}
+
+\begin{extras}[PARA ENTENDERLO]
+\begin{itemize}
+  \item ``El límite son los datos'' es una \textbf{interpretación}, no algo demostrado: lo sostiene que
+        modelos muy distintos (árbol y red, chicos y grandes) se estancan en la misma zona de F1.
+  \item El archivo entregado tiene las predicciones de los dos modelos finales sobre el test (columnas
+        \texttt{pred\_arbol} y \texttt{pred\_rna}).\nb{7}
+\end{itemize}
+\end{extras}
+
+% ==================================================================
+\section{Preguntas posibles}
+
+Respuestas cortas: alcanza con decir la idea y, si repreguntan, ampliar con lo de las secciones
+``Para entenderlo''.
+
+\subsection{Datos y análisis exploratorio}
+
+\begin{description}[style=nextline, leftmargin=0pt, itemsep=6pt]
+  \item[¿Por qué F1 macro y no accuracy?]
+    Las clases están desbalanceadas. Un modelo que casi nunca predice \textit{Muy buena} puede tener buena
+    accuracy; el F1 macro promedia las tres clases por igual y lo castiga. Igual reportamos las dos.
+  \item[¿Cómo detectaron que los ceros eran datos faltantes?]
+    Por sentido común del dominio (una película no cuesta 0 ni dura 0 minutos) y por la proporción: un 79\,\%
+    de presupuestos en 0 no puede ser real. Los contamos aparte porque \texttt{isna()} no los ve.
+  \item[¿Por qué dejaron el año si casi no separa las clases?]
+    Por sí solo separa poco, pero el árbol puede combinarlo con otros atributos (por ejemplo, la popularidad
+    significa cosas distintas en una película vieja y en una nueva). Y no agrega riesgo de fuga.
+  \item[¿El test tiene la misma distribución de clases que el train?]
+    Lo verificamos en el notebook (sección 2.8), junto con que no hay películas repetidas entre train y test.
+\end{description}
+
+\subsection{Preprocesamiento}
+
+\begin{description}[style=nextline, leftmargin=0pt, itemsep=6pt]
+  \item[¿Qué es la fuga de datos y cómo la evitaron?]
+    Usar, al entrenar o transformar, información de los datos con los que después se evalúa. La evitamos
+    dividiendo primero y calculando promedios, columnas del one-hot y escalador solo con entrenamiento;
+    después se aplican igual a validación y test.
+  \item[¿Por qué completar con el promedio y no con otro valor?]
+    Es lo que vimos en el laboratorio 1 con \texttt{Age}. La mediana sería más robusta con colas largas, y
+    es una mejora posible. Además, los indicadores \texttt{*\_conocido} le permiten al modelo distinguir un
+    valor imputado de uno real.
+  \item[Si el 79\,\% del presupuesto falta, ¿no es inventar datos completarlo?]
+    Sí, por eso agregamos \texttt{budget\_conocido}: el árbol puede separar primero si el dato existe y
+    recién después usar el valor. Con el país no lo hicimos porque es categórico y falta todavía más
+    (90\,\%): completarlo con el más frecuente sería inventar casi todo.
+  \item[¿Por qué escalar para la red y no para el árbol?]
+    El árbol compara cada atributo contra un umbral: cambiar la escala solo cambia el número del umbral,
+    no qué ejemplos quedan de cada lado. La red multiplica las entradas por pesos y aprende por gradiente:
+    con escalas muy distintas (millones contra 0/1) el entrenamiento es lento e inestable.
+  \item[¿Por qué el logaritmo antes de escalar?]
+    \texttt{MinMaxScaler} usa el mínimo y el máximo. Con colas largas, el máximo lo definen unos pocos
+    valores enormes y el resto queda aplastado cerca de $-1$. Sin el logaritmo, la misma red bajó de 0.65 a
+    0.44 de F1 macro.
+  \item[{¿Por qué al intervalo $[-1, 1]$?}]
+    Es como lo hicimos en el laboratorio 3. Lo importante es que todas las entradas queden en un rango
+    comparable; \texttt{StandardScaler} (media 0, desvío 1) también hubiera servido.
+  \item[¿Por qué descartaron los nombres de actores y directores?]
+    Miles de valores distintos: el one-hot crearía miles de columnas casi vacías y el modelo memorizaría
+    nombres que en el test casi no se repiten. Su popularidad y cantidad de películas ya están como números.
+  \item[¿Qué pasa si en el test aparece un género que no estaba en el entrenamiento?]
+    Las columnas del one-hot se fijan con el conjunto de ajuste (\texttt{reindex}): un género nuevo queda
+    con todas sus columnas en 0, y una columna que falte se completa con ceros.
+  \item[¿Por qué estratificar la división?]
+    Para que entrenamiento y validación tengan la misma proporción de clases. Con \textit{Muy buena} al
+    15\,\%, una división al azar podría dejar a validación con más o menos de esa clase y sesgar las
+    métricas.
+\end{description}
+
+\subsection{Árbol de decisión}
+
+\begin{description}[style=nextline, leftmargin=0pt, itemsep=6pt]
+  \item[¿Cómo elige el árbol el atributo y el umbral de cada corte?]
+    Prueba los cortes posibles ``atributo $\le$ umbral'' y elige el que deja los hijos más puros, es decir,
+    el que más reduce la impureza de Gini (criterio por defecto de scikit-learn, algoritmo CART). ID3 hace
+    lo mismo con la entropía (ganancia de información).
+  \item[¿Qué hace \texttt{max\_depth}? ¿Y \texttt{min\_samples\_split}?]
+    \texttt{max\_depth} limita cuántas preguntas seguidas puede hacer el árbol. \texttt{min\_samples\_split}
+    exige que un nodo tenga al menos esa cantidad de ejemplos para dividirse: evita reglas apoyadas en
+    muy pocos casos. Los dos frenan el sobreajuste.
+  \item[¿Por qué un parámetro por vez y después el barrido conjunto?]
+    Un parámetro por vez permite ver el efecto de cada uno. Pero la mejor profundidad podía cambiar al
+    exigir un mínimo para dividir; el barrido conjunto lo verificó y confirmó la elección.
+  \item[¿Cómo predice una hoja?]
+    Con la clase mayoritaria de los ejemplos de entrenamiento que llegaron a esa hoja.
+  \item[En la figura del árbol, ¿qué es \texttt{value = [4615, 3846, 1539]}?]
+    Cuántos ejemplos de cada clase llegan al nodo, en orden \textbf{alfabético}: Buena, Mala, Muy buena.
+  \item[¿Por qué el árbol por defecto llega al 100\,\% en entrenamiento?]
+    Porque sigue dividiendo hasta que cada hoja tiene una sola clase: memoriza cada ejemplo.
+  \item[¿Por qué eligieron profundidad 12 si empata con 10?]
+    Fue la de mayor F1 en validación del barrido: con más decimales, 12 queda apenas por encima de 10, y
+    redondeadas las dos dan 0.670. El empate muestra que el resultado es estable; con 10 el árbol sería
+    algo más chico y también sería una elección válida.
+\end{description}
+
+\subsection{Red neuronal}
+
+\begin{description}[style=nextline, leftmargin=0pt, itemsep=6pt]
+  \item[¿Por qué softmax en la salida y \texttt{categorical\_crossentropy}?]
+    Softmax da 3 probabilidades que suman 1, una por clase. La entropía cruzada mide qué tan baja fue la
+    probabilidad asignada a la clase correcta, y necesita la clase como vector one-hot.
+  \item[¿Para qué sirve ReLU?]
+    Es la no linealidad de las capas ocultas. Sin ella, apilar capas sería equivalente a una sola
+    transformación lineal.
+  \item[¿Cómo aprende la red?]
+    Hace la pasada hacia adelante, calcula la pérdida, y con backpropagation obtiene el gradiente de la
+    pérdida respecto de cada peso; el optimizador (Adam) mueve los pesos un paso en la dirección que
+    reduce la pérdida. Eso se repite en cada batch.
+  \item[¿Cómo eligieron las épocas?]
+    Mirando la curva de pérdida en validación: cuando sube mientras la de entrenamiento sigue bajando, la
+    red sobreajusta. Usamos la época con menor pérdida en validación.
+  \item[¿No es eso hacer trampa con validación?]
+    Validación existe justamente para elegir hiperparámetros, y las épocas son uno. Lo que no se toca para
+    decidir es el test.
+  \item[¿Por qué la red más chica fue la mejor?]
+    Con 28 atributos y 10.000 ejemplos, las redes grandes tienen muchísimos pesos (R4 más de 14.000) y
+    memorizan en pocas épocas. Cortadas a tiempo, no aprenden más que la chica: la información disponible
+    en los atributos es la que limita.
+  \item[¿Qué es una época y qué es el batch?]
+    Época: una pasada por todo el entrenamiento. Batch: cuántos ejemplos se procesan antes de cada
+    actualización de pesos.
+  \item[¿Los resultados de la red son reproducibles?]
+    Sí: fijamos la semilla (\texttt{keras.utils.set\_random\_seed}) y activamos el modo determinista de
+    TensorFlow, así cada corrida da los mismos pesos iniciales y el mismo orden de batches.
+  \item[¿Por qué no usaron Dropout o early stopping?]
+    Nos quedamos con lo visto en la teoría y los laboratorios. El efecto del early stopping lo
+    reproducimos a mano eligiendo las épocas con la curva de validación.
+\end{description}
+
+\subsection{Resultados y cierre}
+
+\begin{description}[style=nextline, leftmargin=0pt, itemsep=6pt]
+  \item[¿Cómo les fue en el test?]
+    El test trae la columna \texttt{class}; la usamos \textbf{una sola vez al final}, solo para informar,
+    sin cambiar nada. Árbol: accuracy 0.704 y F1 macro 0.669. Red: 0.696 y 0.622. Confirma el orden de
+    validación.\nb{7.1}
+  \item[¿Por qué a la red le va peor en \textit{Muy buena}?]
+    Predice esa clase muy pocas veces: en el test, para el 6\,\% de las películas, cuando en realidad son
+    el 15\,\%. Su recall es bajo.
+  \item[¿Qué harían para mejorar \textit{Muy buena}?]
+    Darle más peso a esa clase al entrenar (por ejemplo, \texttt{class\_weight}), y mejorar los atributos:
+    es donde vemos el límite.
+  \item[¿Qué más probarían?]
+    Validación cruzada para tener métricas más estables que con una sola división; varios árboles
+    combinados (la teoría menciona técnicas que construyen más de un árbol, como random forest);
+    completar faltantes con la mediana.
+  \item[¿Por qué el modelo final se reentrena con todo el train?]
+    Validación ya cumplió su función (elegir hiperparámetros); con la configuración fija, entrenar con
+    12.500 ejemplos en vez de 10.000 suele dar un modelo algo mejor.
+  \item[¿Cómo usaron la IA en el trabajo?]
+    Como está en la sección 8 del notebook: para consultar cómo llevar a pandas, scikit-learn y Keras lo
+    visto en clase y en los laboratorios, para los gráficos y para el diseño de las slides. Las decisiones y
+    los experimentos los podemos justificar uno por uno.
+\end{description}
+
+\section{Puntos débiles y cómo responderlos}
+
+Mejor conocerlos antes de que los señalen. En todos, la respuesta honesta es la mejor.
+
+\begin{aviso}{Lo que pueden señalar}
+\begin{itemize}
+  \item \textbf{Hay dos filas ``R6'' en la tabla de la red.} Son las dos variantes de tasa de aprendizaje
+        del mismo experimento (0.0001 y 0.01).
+  \item \textbf{La slide 11 dice ``la época 4 de 100'' y la red elegida usa 200 épocas.} La curva es de R4
+        (la red grande), como ejemplo de sobreajuste. R1 no sobreajusta: su pérdida de validación se
+        estabiliza, así que 200 épocas no la perjudican.
+  \item \textbf{Las métricas de validación son algo optimistas.} Elegimos el mejor de varios experimentos
+        con el mismo conjunto de validación, y eso favorece al elegido. Por eso el test, que no se usó para
+        decidir, da algo menos (0.669 contra 0.670 en el árbol; 0.622 contra 0.644 en la red).
+  \item \textbf{Las diferencias son chicas.} Entre las configuraciones de la red hay pocos centésimos, y
+        con una sola división no sabemos cuánto de eso es ruido. La ventaja del árbol sobre la red, en
+        cambio, se repite en validación y en test.
+  \item \textbf{El promedio con colas largas.} El promedio del presupuesto lo tiran hacia arriba unos pocos
+        valores enormes; la mediana sería más representativa. Lo mitiga el indicador \texttt{*\_conocido}.
+  \item \textbf{¿La popularidad es una ``trampa''?} Es un atributo dado en los datos, no la clase. Pero
+        puede estar medida después del estreno, y entonces reflejar en parte lo mismo que la calificación.
+        Es una limitación del dataset que vale la pena reconocer si preguntan.
+  \item \textbf{\textit{Muy buena} sigue siendo débil} (recall de 39\,\% y 32\,\%). No aplicamos ninguna
+        técnica de balanceo; es la primera mejora que haríamos.
+\end{itemize}
+\end{aviso}
+
+\section{Números para tener a mano}
+
+\begin{center}
+\small
+\begin{tabularx}{\linewidth}{@{}l X@{}}
+\toprule
+Dato & Valor \\
+\midrule
+Train / test                    & 12.500 / 500 películas \\
+División                        & 10.000 entrenamiento / 2.500 validación, estratificada, semilla 42 \\
+Clases                          & Mala 38.5\,\%, Buena 46.2\,\%, Muy buena 15.4\,\% \\
+Ceros y faltantes               & budget 79\,\%, revenue 76\,\%, país 90\,\%, runtime 10\,\% \\
+Atributos de entrada            & 28 \\
+Árbol por defecto               & profundidad 30, 1763 hojas; accuracy 100\,\% / 67\,\% \\
+Árbol elegido                   & \texttt{max\_depth=12}, \texttt{min\_samples\_split=100}, 162 hojas \\
+Red elegida                     & 1 capa oculta de 16 (ReLU), softmax 3, Adam lr 0.001, batch 32, 200 épocas, 515 pesos \\
+Validación (F1 macro)           & árbol 0.670, red 0.644 \\
+Validación (accuracy)           & árbol 0.723, red 0.714 \\
+F1 \textit{Muy buena}           & árbol 0.499, red 0.422 (recall 39\,\% y 32\,\%) \\
+Test (F1 macro, solo informativo) & árbol 0.669, red 0.622 \\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\end{document}
